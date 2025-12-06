@@ -1,4 +1,5 @@
 const std = @import("std");
+const aoc = @import("aoc");
 
 pub fn main() !void {
     var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
@@ -10,59 +11,45 @@ pub fn main() !void {
     }
     const alloc = gpa.allocator();
 
-    try day1Part1(alloc);
-    try day1Part2(alloc);
+    try part1(alloc);
+    try part2(alloc);
 }
 
-fn day1Part1(alloc: std.mem.Allocator) !void {
+fn part1(alloc: std.mem.Allocator) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    const f = try loadInput(alloc, "day1-input");
+    const f = try aoc.loadInput(alloc, "day1-input");
     defer f.close();
     var file_buffer: [4096]u8 = undefined;
     var reader = f.reader(&file_buffer);
 
     while (try reader.interface.takeDelimiter('\n')) |line| {
-        const new_dial, const new_count = try day1Part1ProcessLine(line, dial);
+        const new_dial, const new_count = try part1ProcessLine(line, dial);
         dial = new_dial;
         count += new_count;
     }
     std.debug.print("01.1: Password = {d}\n", .{count});
 }
 
-fn day1Part2(alloc: std.mem.Allocator) !void {
+fn part2(alloc: std.mem.Allocator) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    const f = try loadInput(alloc, "day1-input");
+    const f = try aoc.loadInput(alloc, "day1-input");
     defer f.close();
     var file_buffer: [4096]u8 = undefined;
     var reader = f.reader(&file_buffer);
 
     while (try reader.interface.takeDelimiter('\n')) |line| {
-        const new_dial, const new_count = try day1Part2ProcessLine(line, dial);
+        const new_dial, const new_count = try part2ProcessLine(line, dial);
         dial = new_dial;
         count += new_count;
     }
     std.debug.print("01.2: Password = {d}\n", .{count});
 }
 
-fn loadInput(alloc: std.mem.Allocator, name: []const u8) !std.fs.File {
-    const home_dir = try std.process.getEnvVarOwned(alloc, "HOME");
-    defer alloc.free(home_dir);
-
-    const path = try std.fmt.allocPrint(
-        alloc,
-        "{s}/Code/advent-of-code-2025/input/{s}",
-        .{ home_dir, name },
-    );
-    defer alloc.free(path);
-
-    return try std.fs.openFileAbsolute(path, .{ .mode = .read_only });
-}
-
-fn day1Part1ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {
+fn part1ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {
     const dir: i16 = switch (line[0]) {
         'L' => -1,
         'R' => 1,
@@ -73,7 +60,7 @@ fn day1Part1ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {
     return .{ new_dial, if (new_dial == 0) 1 else 0 };
 }
 
-fn day1Part2ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {
+fn part2ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {
     const dir: i16 = switch (line[0]) {
         'L' => -1,
         'R' => 1,
@@ -109,7 +96,7 @@ test "day 1 - part 1" {
         .{ .input = "L82", .dial = 32, .count = 3 },
     };
     for (test_data) |d| {
-        const new_dial, const new_count = try day1Part1ProcessLine(d.input, dial);
+        const new_dial, const new_count = try part1ProcessLine(d.input, dial);
         dial = new_dial;
         count += new_count;
         try std.testing.expectEqual(d.dial, dial);
@@ -137,7 +124,7 @@ test "day 1 - part 2" {
         .{ .input = "L82", .dial = 32, .count = 8 },
     };
     for (test_data) |d| {
-        const new_dial, const new_count = try day1Part2ProcessLine(d.input, dial);
+        const new_dial, const new_count = try part2ProcessLine(d.input, dial);
         dial = new_dial;
         count += new_count;
         try std.testing.expectEqual(d.dial, dial);
