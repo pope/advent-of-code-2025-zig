@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) !void {
     };
 
     try addExeAndTests(ctx, "day1");
+    try addExeAndTests(ctx, "day2");
 }
 
 fn addExeAndTests(ctx: Context, name: []const u8) !void {
