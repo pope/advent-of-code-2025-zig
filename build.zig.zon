@@ -1,0 +1,7 @@
+.{
+    .name = .advent_of_code_2025,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.2",
+    .paths = .{""},
+    .fingerprint = 0xe67df0670480a637,
+}
