@@ -15,13 +15,17 @@ pub fn main() !void {
 fn part1(reader: *std.io.Reader) !void {
     var sum: u16 = 0;
     while (try reader.takeDelimiter('\n')) |input| {
-        const a = std.mem.indexOfMax(u8, input[0 .. input.len - 1]);
-        const b = std.mem.indexOfMax(u8, input[a + 1 ..]);
-        const tens = (input[a] - 0x30) * 10;
-        const ones = input[b + (a + 1)] - 0x30;
-        sum += tens + ones;
+        sum += part1Process(input);
     }
     std.debug.print("03.1: Joltage = {}\n", .{sum});
+}
+
+fn part1Process(input: []const u8) u16 {
+    const a = std.mem.indexOfMax(u8, input[0 .. input.len - 1]);
+    const b = std.mem.indexOfMax(u8, input[a + 1 ..]);
+    const tens = (input[a] - 0x30) * 10;
+    const ones = input[b + (a + 1)] - 0x30;
+    return tens + ones;
 }
 
 fn part2(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
@@ -97,14 +101,10 @@ test "day 3 - part 1" {
         .{ .input = "818181911112111", .expected = 92 },
     };
     for (test_data) |data| {
-        const a = std.mem.indexOfMax(u8, data.input[0 .. data.input.len - 1]);
-        const b = std.mem.indexOfMax(u8, data.input[a + 1 ..]);
-        const tens = (data.input[a] - 0x30) * 10;
-        const ones = data.input[b + (a + 1)] - 0x30;
+        const value = part1Process(data.input);
+        try std.testing.expectEqual(data.expected, value);
 
-        try std.testing.expectEqual(data.expected, tens + ones);
-
-        sum += tens + ones;
+        sum += value;
     }
 
     try std.testing.expectEqual(357, sum);
