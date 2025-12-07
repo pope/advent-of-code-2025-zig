@@ -2,25 +2,14 @@ const std = @import("std");
 const aoc = @import("aoc");
 
 pub fn main() !void {
-    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
-    defer {
-        const leaked = gpa.deinit();
-        if (leaked == .leak) {
-            @panic("Memory leak detected!");
-        }
-    }
-    const alloc = gpa.allocator();
+    var setup: aoc.Setup = try .init("day2-input");
+    defer setup.deinit();
 
-    var file_buffer: [4096]u8 = undefined;
-    const f = try aoc.loadInput(alloc, "day2-input");
-    defer f.close();
-    var reader = f.reader(&file_buffer);
-
+    var reader = setup.reader();
     try part1(&reader.interface);
 
     try reader.seekTo(0);
-
-    try part2(alloc, &reader.interface);
+    try part2(setup.allocator(), &reader.interface);
 }
 
 fn part1(r: *std.io.Reader) !void {
