@@ -12,16 +12,13 @@ pub fn main() !void {
     const alloc = gpa.allocator();
 
     var file_buffer: [4096]u8 = undefined;
-
     const f = try aoc.loadInput(alloc, "day2-input");
     defer f.close();
     var reader = f.reader(&file_buffer);
 
     try part1(&reader.interface);
 
-    // Reset file
-    try f.seekTo(0);
-    reader = f.reader(&file_buffer);
+    try reader.seekTo(0);
 
     try part2(alloc, &reader.interface);
 }

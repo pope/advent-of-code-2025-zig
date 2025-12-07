@@ -11,20 +11,23 @@ pub fn main() !void {
     }
     const alloc = gpa.allocator();
 
-    try part1(alloc);
-    try part2(alloc);
+    var file_buffer: [4096]u8 = undefined;
+    const f = try aoc.loadInput(alloc, "day1-input");
+    defer f.close();
+    var reader = f.reader(&file_buffer);
+
+    try part1(&reader.interface);
+
+    try reader.seekTo(0);
+
+    try part2(&reader.interface);
 }
 
-fn part1(alloc: std.mem.Allocator) !void {
+fn part1(reader: *std.io.Reader) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    const f = try aoc.loadInput(alloc, "day1-input");
-    defer f.close();
-    var file_buffer: [4096]u8 = undefined;
-    var reader = f.reader(&file_buffer);
-
-    while (try reader.interface.takeDelimiter('\n')) |line| {
+    while (try reader.takeDelimiter('\n')) |line| {
         const new_dial, const new_count = try part1ProcessLine(line, dial);
         dial = new_dial;
         count += new_count;
@@ -32,16 +35,11 @@ fn part1(alloc: std.mem.Allocator) !void {
     std.debug.print("01.1: Password = {d}\n", .{count});
 }
 
-fn part2(alloc: std.mem.Allocator) !void {
+fn part2(reader: *std.io.Reader) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    const f = try aoc.loadInput(alloc, "day1-input");
-    defer f.close();
-    var file_buffer: [4096]u8 = undefined;
-    var reader = f.reader(&file_buffer);
-
-    while (try reader.interface.takeDelimiter('\n')) |line| {
+    while (try reader.takeDelimiter('\n')) |line| {
         const new_dial, const new_count = try part2ProcessLine(line, dial);
         dial = new_dial;
         count += new_count;
