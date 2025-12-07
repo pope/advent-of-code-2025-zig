@@ -7,7 +7,6 @@ const Context = struct {
     mod: *std.Build.Module,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
-    alloc: std.mem.Allocator,
 };
 
 pub fn build(b: *std.Build) !void {
@@ -25,7 +24,6 @@ pub fn build(b: *std.Build) !void {
         .mod = mod,
         .target = target,
         .optimize = b.standardOptimizeOption(.{}),
-        .alloc = std.heap.page_allocator,
     };
 
     try addExeAndTests(ctx, "day1");
@@ -34,11 +32,11 @@ pub fn build(b: *std.Build) !void {
 
 fn addExeAndTests(ctx: Context, name: []const u8) !void {
     const path = try std.fmt.allocPrint(
-        ctx.alloc,
+        ctx.b.allocator,
         "src/{s}.zig",
         .{name},
     );
-    defer ctx.alloc.free(path);
+    defer ctx.b.allocator.free(path);
 
     const exe = ctx.b.addExecutable(.{
         .name = name,
@@ -61,4 +59,18 @@ fn addExeAndTests(ctx: Context, name: []const u8) !void {
     });
     const run_exe_tests = ctx.b.addRunArtifact(exe_tests);
     ctx.test_step.dependOn(&run_exe_tests.step);
+
+    // Not freeing this since this kept by the builder.
+    const exe_name = try std.fmt.allocPrint(
+        ctx.b.allocator,
+        "run-{s}",
+        .{name},
+    );
+    const exe_desc = try std.fmt.allocPrint(
+        ctx.b.allocator,
+        "Run {s}",
+        .{name},
+    );
+    const exe_step = ctx.b.step(exe_name, exe_desc);
+    exe_step.dependOn(&run_cmd.step);
 }
