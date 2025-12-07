@@ -26,11 +26,22 @@ pub fn build(b: *std.Build) !void {
         .optimize = b.standardOptimizeOption(.{}),
     };
 
-    try addExeAndTests(ctx, "day1");
-    try addExeAndTests(ctx, "day2");
+    for (0..3) |i| {
+        try addDayExeAndTests(&ctx, i + 1);
+    }
 }
 
-fn addExeAndTests(ctx: Context, name: []const u8) !void {
+fn addDayExeAndTests(ctx: *const Context, day: usize) !void {
+    const name = try std.fmt.allocPrint(
+        ctx.b.allocator,
+        "day{}",
+        .{day},
+    );
+    defer ctx.b.allocator.free(name);
+    return addExeAndTests(ctx, name);
+}
+
+fn addExeAndTests(ctx: *const Context, name: []const u8) !void {
     const path = try std.fmt.allocPrint(
         ctx.b.allocator,
         "src/{s}.zig",
