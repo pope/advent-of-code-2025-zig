@@ -187,9 +187,11 @@ test "day 4 - part 1" {
     }
 
     // Process the list.
-    // Choose 4 so that both loops run more than once.
-    const vec_len = 4; // std.simd.suggestVectorLength(u8) orelse 8;
-    const output = try part1ProcessList(&arena, list, vec_len);
+    const output = try part1ProcessList(
+        &arena,
+        list,
+        4, // So that both loops run more than once
+    );
 
     // Make a string for the output
     var str: std.ArrayList(u8) = .empty;
