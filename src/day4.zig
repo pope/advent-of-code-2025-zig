@@ -27,7 +27,7 @@ fn part1(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
 
     const output = try part1ProcessList(
         &arena,
-        list,
+        list.items,
         std.simd.suggestVectorLength(u8) orelse 8,
     );
 
@@ -71,14 +71,14 @@ inline fn part1ListAddRow(
 
 fn part1ProcessList(
     arena: *std.heap.ArenaAllocator,
-    list: std.ArrayList([]u8),
+    list: []const []const u8,
     vec_len: comptime_int,
 ) !std.ArrayList([]u8) {
     var output: std.ArrayList([]u8) = try .initCapacity(
         arena.allocator(),
-        list.items.len - padding,
+        list.len - padding,
     );
-    for (list.items[1 .. list.items.len - 1]) |*buf| {
+    for (list[1 .. list.len - 1]) |*buf| {
         const new_buf = try arena.allocator().alloc(
             u8,
             buf.len - padding,
@@ -88,44 +88,44 @@ fn part1ProcessList(
     }
     const VecU8 = @Vector(vec_len, u8);
 
-    for (1..list.items.len - 1) |i| {
+    for (1..list.len - 1) |i| {
         var res_line = output.items[i - 1];
         const len = res_line.len;
 
         var j: usize = 0;
         while (j + vec_len <= len) : (j += vec_len) {
-            var vo = @as(VecU8, list.items[i][j + 0 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i][j + 1 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i][j + 2 ..][0..vec_len].*);
+            var vo = @as(VecU8, list[i][j + 0 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i][j + 1 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i][j + 2 ..][0..vec_len].*);
 
-            vo += @as(VecU8, list.items[i - 1][j + 0 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i - 1][j + 1 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i - 1][j + 2 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i - 1][j + 0 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i - 1][j + 1 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i - 1][j + 2 ..][0..vec_len].*);
 
-            vo += @as(VecU8, list.items[i + 1][j + 0 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i + 1][j + 1 ..][0..vec_len].*);
-            vo += @as(VecU8, list.items[i + 1][j + 2 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i + 1][j + 0 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i + 1][j + 1 ..][0..vec_len].*);
+            vo += @as(VecU8, list[i + 1][j + 2 ..][0..vec_len].*);
 
             // Multiple so that values that were 0, are 0 again
-            vo *= @as(VecU8, list.items[i][j + 1 ..][0..vec_len].*);
+            vo *= @as(VecU8, list[i][j + 1 ..][0..vec_len].*);
 
             res_line[j..][0..vec_len].* = vo;
         }
 
         while (j < len) : (j += 1) {
-            var res = list.items[i][j + 1];
+            var res = list[i][j + 1];
             if (res == 0) continue;
 
-            res += list.items[i][j + 0];
-            res += list.items[i][j + 2];
+            res += list[i][j + 0];
+            res += list[i][j + 2];
 
-            res += list.items[i - 1][j + 0];
-            res += list.items[i - 1][j + 1];
-            res += list.items[i - 1][j + 2];
+            res += list[i - 1][j + 0];
+            res += list[i - 1][j + 1];
+            res += list[i - 1][j + 2];
 
-            res += list.items[i + 1][j + 0];
-            res += list.items[i + 1][j + 1];
-            res += list.items[i + 1][j + 2];
+            res += list[i + 1][j + 0];
+            res += list[i + 1][j + 1];
+            res += list[i + 1][j + 2];
 
             res_line[j] = res;
         }
@@ -189,7 +189,7 @@ test "day 4 - part 1" {
     // Process the list.
     const output = try part1ProcessList(
         &arena,
-        list,
+        list.items,
         4, // So that both loops run more than once
     );
 
