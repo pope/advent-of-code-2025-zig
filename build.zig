@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = b.standardOptimizeOption(.{}),
     };
 
-    for (0..3) |i| {
+    for (0..4) |i| {
         try addDayExeAndTests(&ctx, i + 1);
     }
 }
