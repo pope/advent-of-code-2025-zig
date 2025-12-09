@@ -17,7 +17,10 @@ fn part1(reader: *std.io.Reader) !void {
     var count: u16 = 0;
 
     while (try reader.takeDelimiter('\n')) |line| {
-        const new_dial, const new_count = try part1ProcessLine(line, dial);
+        const new_dial, const new_count = try part1ProcessLine(
+            line,
+            dial,
+        );
         dial = new_dial;
         count += new_count;
     }
@@ -29,7 +32,10 @@ fn part2(reader: *std.io.Reader) !void {
     var count: u16 = 0;
 
     while (try reader.takeDelimiter('\n')) |line| {
-        const new_dial, const new_count = try part2ProcessLine(line, dial);
+        const new_dial, const new_count = try part2ProcessLine(
+            line,
+            dial,
+        );
         dial = new_dial;
         count += new_count;
     }
@@ -83,7 +89,10 @@ test "day 1 - part 1" {
         .{ .input = "L82", .dial = 32, .count = 3 },
     };
     for (test_data) |d| {
-        const new_dial, const new_count = try part1ProcessLine(d.input, dial);
+        const new_dial, const new_count = try part1ProcessLine(
+            d.input,
+            dial,
+        );
         dial = new_dial;
         count += new_count;
         try std.testing.expectEqual(d.dial, dial);
@@ -111,7 +120,10 @@ test "day 1 - part 2" {
         .{ .input = "L82", .dial = 32, .count = 8 },
     };
     for (test_data) |d| {
-        const new_dial, const new_count = try part2ProcessLine(d.input, dial);
+        const new_dial, const new_count = try part2ProcessLine(
+            d.input,
+            dial,
+        );
         dial = new_dial;
         count += new_count;
         try std.testing.expectEqual(d.dial, dial);

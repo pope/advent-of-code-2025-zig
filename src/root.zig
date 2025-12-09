@@ -36,7 +36,10 @@ pub const Setup = struct {
 };
 
 pub fn loadInput(alloc: std.mem.Allocator, name: []const u8) !std.fs.File {
-    const home_dir = try std.process.getEnvVarOwned(alloc, "HOME");
+    const home_dir = try std.process.getEnvVarOwned(
+        alloc,
+        "HOME",
+    );
     defer alloc.free(home_dir);
 
     const path = try std.fmt.allocPrint(
@@ -46,5 +49,8 @@ pub fn loadInput(alloc: std.mem.Allocator, name: []const u8) !std.fs.File {
     );
     defer alloc.free(path);
 
-    return try std.fs.openFileAbsolute(path, .{ .mode = .read_only });
+    return try std.fs.openFileAbsolute(
+        path,
+        .{ .mode = .read_only },
+    );
 }

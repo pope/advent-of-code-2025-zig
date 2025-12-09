@@ -492,7 +492,10 @@ test "day 4 - part 2" {
             output.items,
             vec_len,
         );
-        const actual = try outputToStr(arena.allocator(), output.items);
+        const actual = try outputToStr(
+            arena.allocator(),
+            output.items,
+        );
         defer arena.allocator().free(actual);
 
         const actual_count = countMovableRolls(output.items);

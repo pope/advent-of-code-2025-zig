@@ -59,8 +59,14 @@ fn part2Process(alloc: std.mem.Allocator, input: []const u8) !u64 {
         const cur = process_it.?;
         const next = cur.next.?;
 
-        const a = @as(*JoltageNode, @fieldParentPtr("node", cur)).data;
-        const b = @as(*JoltageNode, @fieldParentPtr("node", next)).data;
+        const a = @as(
+            *JoltageNode,
+            @fieldParentPtr("node", cur),
+        ).data;
+        const b = @as(
+            *JoltageNode,
+            @fieldParentPtr("node", next),
+        ).data;
 
         if (a < b) {
             len -= 1;
@@ -79,7 +85,10 @@ fn part2Process(alloc: std.mem.Allocator, input: []const u8) !u64 {
         var count: usize = 0;
         var result_it: ?*const std.DoublyLinkedList.Node = list.first;
         while (result_it) |node| : (result_it = node.next) {
-            const j: *const JoltageNode = @fieldParentPtr("node", node);
+            const j: *const JoltageNode = @fieldParentPtr(
+                "node",
+                node,
+            );
             result = result * 10 + j.data;
             count += 1;
 
@@ -122,7 +131,10 @@ test "day 3 - part 2" {
         .{ .input = "818181911112111", .expected = 888911112111 },
     };
     for (test_data) |data| {
-        const val = try part2Process(std.testing.allocator, data.input);
+        const val = try part2Process(
+            std.testing.allocator,
+            data.input,
+        );
         try std.testing.expectEqual(data.expected, val);
         sum += val;
     }
