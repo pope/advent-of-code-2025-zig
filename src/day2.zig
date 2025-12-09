@@ -9,7 +9,7 @@ pub fn main() !void {
     try part1(&reader.interface);
 
     try reader.seekTo(0);
-    try part2(setup.allocator(), &reader.interface);
+    try part2(&reader.interface);
 }
 
 fn part1(r: *std.io.Reader) !void {
@@ -48,15 +48,10 @@ fn part1(r: *std.io.Reader) !void {
     std.debug.print("02.1: Password = {d}\n", .{sum});
 }
 
-fn part2(alloc: std.mem.Allocator, r: *std.io.Reader) !void {
-    var list: std.ArrayList(u64) = .empty;
-    defer list.deinit(alloc);
-
+fn part2(r: *std.io.Reader) !void {
     var id_str_buf: [32]u8 = undefined;
     var sum: u64 = 0;
     while (try r.takeDelimiter(',')) |input| {
-        defer list.clearRetainingCapacity();
-
         const start, const end = blk: {
             const i = std.mem.indexOf(
                 u8,
@@ -75,7 +70,7 @@ fn part2(alloc: std.mem.Allocator, r: *std.io.Reader) !void {
                 "{d}",
                 .{id},
             );
-            group: for (2..9) |divisor| {
+            group: for (2..id_str.len + 2) |divisor| {
                 if (id_str.len % divisor != 0) continue;
                 const len = id_str.len / divisor;
                 for (0..divisor - 1) |i| {
@@ -87,14 +82,8 @@ fn part2(alloc: std.mem.Allocator, r: *std.io.Reader) !void {
                         continue :group;
                     }
                 }
-                if (std.mem.indexOfScalar(
-                    u64,
-                    list.items,
-                    id,
-                ) == null) {
-                    try list.append(alloc, id);
-                    sum += id;
-                }
+                sum += id;
+                break;
             }
         }
     }
@@ -297,7 +286,7 @@ test "day 2 - part 2" {
                 "{d}",
                 .{id},
             );
-            group: for (2..9) |divisor| {
+            group: for (2..id_str.len + 2) |divisor| {
                 if (id_str.len % divisor != 0) continue;
                 const len = id_str.len / divisor;
                 for (0..divisor - 1) |i| {
@@ -309,14 +298,9 @@ test "day 2 - part 2" {
                         continue :group;
                     }
                 }
-                if (std.mem.indexOfScalar(
-                    u32,
-                    list.items,
-                    id,
-                ) == null) {
-                    try list.append(alloc, id);
-                    actual_sum += id;
-                }
+                try list.append(alloc, id);
+                actual_sum += id;
+                break;
             }
         }
         try std.testing.expectEqualSlices(
