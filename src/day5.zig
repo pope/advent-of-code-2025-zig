@@ -5,27 +5,33 @@ pub fn main() !void {
     var setup: aoc.Setup = try .init("day5-input");
     defer setup.deinit();
 
-    var reader = setup.reader();
-
     const num_size = u64;
-    const RangeT = Range(num_size);
-
-    var ranges: std.ArrayList(RangeT) = .empty;
+    var it = setup.lineIterator();
+    var ranges = try processRanges(
+        num_size,
+        setup.allocator(),
+        &it,
+    );
     defer ranges.deinit(setup.allocator());
-    while (try reader.interface.takeDelimiter('\n')) |line| {
-        if (std.mem.eql(u8, "", line)) break;
-        try ranges.append(setup.allocator(), try RangeT.initFromStr(line));
-    } else return error.Oops;
-    compressRanges(RangeT, &ranges);
 
-    try part1(num_size, ranges.items, &reader.interface);
+    std.debug.print(
+        "05.1: Fresh = {}\n",
+        .{try part1Answer(num_size, ranges.items, &it)},
+    );
 
-    part2(num_size, ranges.items);
+    std.debug.print(
+        "05.2: Fresh = {}\n",
+        .{part2Answer(num_size, ranges.items)},
+    );
 }
 
-fn part1(comptime T: type, ranges: []const Range(T), reader: *std.io.Reader) !void {
+fn part1Answer(
+    comptime T: type,
+    ranges: []const Range(T),
+    it: *aoc.LineIterator,
+) !u16 {
     var num_fresh: u16 = 0;
-    while (try reader.takeDelimiter('\n')) |line| {
+    while (try it.next()) |line| {
         const a = try std.fmt.parseInt(T, line, 10);
         for (ranges) |r| {
             if (a >= r.low and a <= r.high) {
@@ -34,16 +40,15 @@ fn part1(comptime T: type, ranges: []const Range(T), reader: *std.io.Reader) !vo
             }
         }
     }
-
-    std.debug.print("05.1: Fresh = {}\n", .{num_fresh});
+    return num_fresh;
 }
 
-fn part2(comptime T: type, ranges: []const Range(T)) void {
+fn part2Answer(comptime T: type, ranges: []const Range(T)) T {
     var num_fresh: T = 0;
     for (ranges) |r| {
         num_fresh += r.high - r.low + 1;
     }
-    std.debug.print("05.2: Fresh = {}\n", .{num_fresh});
+    return num_fresh;
 }
 
 fn Range(comptime T: type) type {
@@ -97,10 +102,10 @@ fn compressRanges(
 fn processRanges(
     comptime T: type,
     alloc: std.mem.Allocator,
-    it: *std.mem.SplitIterator(u8, .scalar),
+    it: *aoc.LineIterator,
 ) !std.ArrayList(Range(T)) {
     var ranges: std.ArrayList(Range(T)) = .empty;
-    while (it.next()) |line| {
+    while (try it.next()) |line| {
         if (std.mem.eql(u8, "", line)) break;
         try ranges.append(
             alloc,
@@ -111,24 +116,24 @@ fn processRanges(
     return ranges;
 }
 
+const test_input =
+    \\3-5
+    \\10-14
+    \\16-20
+    \\12-18
+    \\
+    \\1
+    \\5
+    \\8
+    \\11
+    \\17
+    \\32
+;
+
 test "day 5 - part 1" {
     const size_type = u8;
-    const input =
-        \\3-5
-        \\10-14
-        \\16-20
-        \\12-18
-        \\
-        \\1
-        \\5
-        \\8
-        \\11
-        \\17
-        \\32
-    ;
 
-    var it = std.mem.splitScalar(u8, input, '\n');
-
+    var it = aoc.LineIterator.initFromBuffer(test_input);
     var ranges = try processRanges(
         size_type,
         std.testing.allocator,
@@ -146,37 +151,14 @@ test "day 5 - part 1" {
         ranges.items,
     );
 
-    var fresh: size_type = 0;
-    while (it.next()) |line| {
-        const a = try std.fmt.parseInt(size_type, line, 10);
-        for (ranges.items) |r| {
-            if (a >= r.low and a <= r.high) {
-                fresh += 1;
-                break;
-            }
-        }
-    }
-
+    const fresh = try part1Answer(size_type, ranges.items, &it);
     try std.testing.expectEqual(3, fresh);
 }
 
 test "day 5 - part 2" {
     const size_type = u8;
-    const input =
-        \\3-5
-        \\10-14
-        \\16-20
-        \\12-18
-        \\
-        \\1
-        \\5
-        \\8
-        \\11
-        \\17
-        \\32
-    ;
 
-    var it = std.mem.splitScalar(u8, input, '\n');
+    var it = aoc.LineIterator.initFromBuffer(test_input);
     var ranges = try processRanges(
         size_type,
         std.testing.allocator,
@@ -184,9 +166,6 @@ test "day 5 - part 2" {
     );
     defer ranges.deinit(std.testing.allocator);
 
-    var fresh: size_type = 0;
-    for (ranges.items) |r| {
-        fresh += r.high - r.low + 1;
-    }
+    const fresh = part2Answer(size_type, ranges.items);
     try std.testing.expectEqual(14, fresh);
 }

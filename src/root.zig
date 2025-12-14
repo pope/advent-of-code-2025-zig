@@ -4,6 +4,7 @@ pub const Setup = struct {
     gpa: std.heap.GeneralPurposeAllocator(.{}),
     file: std.fs.File,
     file_buffer: [4096]u8,
+    opt_reader: ?std.fs.File.Reader,
 
     pub fn init(input_name: []const u8) !Setup {
         var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
@@ -16,6 +17,7 @@ pub const Setup = struct {
             .gpa = gpa,
             .file = f,
             .file_buffer = undefined,
+            .opt_reader = null,
         };
     }
 
@@ -23,11 +25,25 @@ pub const Setup = struct {
         return self.gpa.allocator();
     }
 
-    pub fn reader(self: *Setup) std.fs.File.Reader {
-        return self.file.reader(&self.file_buffer);
+    pub fn reset(self: *Setup) !void {
+        return self.reader().seekTo(0);
+    }
+
+    pub fn reader(self: *Setup) *std.fs.File.Reader {
+        if (self.opt_reader) |*r| return r;
+
+        const r = self.file.reader(&self.file_buffer);
+        self.opt_reader = r;
+        return &self.opt_reader.?;
+    }
+
+    pub fn lineIterator(self: *Setup) LineIterator {
+        var r = self.reader();
+        return .{ .reader = &r.interface };
     }
 
     pub fn deinit(self: *Setup) void {
+        self.opt_reader = null;
         self.file.close();
 
         const leaked = self.gpa.deinit();
@@ -41,10 +57,25 @@ pub const LineIterator = union(enum) {
     reader: *std.io.Reader,
     split: std.mem.SplitIterator(u8, .scalar),
 
+    pub fn initFromBuffer(buf: []const u8) Self {
+        return .{ .split = std.mem.splitScalar(
+            u8,
+            buf,
+            '\n',
+        ) };
+    }
+
     pub fn next(self: *Self) !?[]const u8 {
         return switch (self.*) {
             .reader => |r| r.takeDelimiter('\n'),
             .split => |*it| it.*.next(),
+        };
+    }
+
+    pub fn peek(self: *Self) !?[]const u8 {
+        return switch (self.*) {
+            .reader => |r| r.peekDelimiterExclusive('\n'),
+            .split => |*it| it.*.peek(),
         };
     }
 };
@@ -55,8 +86,7 @@ test "LineIterator - split" {
         \\Two
         \\Three
     ;
-    const split = std.mem.splitScalar(u8, input, '\n');
-    var it: LineIterator = .{ .split = split };
+    var it = LineIterator.initFromBuffer(input);
 
     try std.testing.expectEqualStrings("One", (try it.next()).?);
     try std.testing.expectEqualStrings("Two", (try it.next()).?);
