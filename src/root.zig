@@ -35,6 +35,53 @@ pub const Setup = struct {
     }
 };
 
+pub const LineIterator = union(enum) {
+    const Self = @This();
+
+    reader: *std.io.Reader,
+    split: std.mem.SplitIterator(u8, .scalar),
+
+    pub fn next(self: *Self) !?[]const u8 {
+        return switch (self.*) {
+            .reader => |r| r.takeDelimiter('\n'),
+            .split => |*it| it.*.next(),
+        };
+    }
+};
+
+test "LineIterator - split" {
+    const input =
+        \\One
+        \\Two
+        \\Three
+    ;
+    const split = std.mem.splitScalar(u8, input, '\n');
+    var it: LineIterator = .{ .split = split };
+
+    try std.testing.expectEqualStrings("One", (try it.next()).?);
+    try std.testing.expectEqualStrings("Two", (try it.next()).?);
+    try std.testing.expectEqualStrings("Three", (try it.next()).?);
+    try std.testing.expectEqual(null, try it.next());
+}
+
+test "LineIterator - reader" {
+    const input =
+        \\One
+        \\Two
+        \\Three
+    ;
+    var buf: [64]u8 = undefined;
+    var reader: std.testing.Reader = .init(&buf, &.{
+        .{ .buffer = input },
+    });
+    var it: LineIterator = .{ .reader = &reader.interface };
+
+    try std.testing.expectEqualStrings("One", (try it.next()).?);
+    try std.testing.expectEqualStrings("Two", (try it.next()).?);
+    try std.testing.expectEqualStrings("Three", (try it.next()).?);
+    try std.testing.expectEqual(null, try it.next());
+}
+
 pub fn loadInput(alloc: std.mem.Allocator, name: []const u8) !std.fs.File {
     const home_dir = try std.process.getEnvVarOwned(
         alloc,

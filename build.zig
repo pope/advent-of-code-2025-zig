@@ -26,6 +26,12 @@ pub fn build(b: *std.Build) !void {
         .optimize = b.standardOptimizeOption(.{}),
     };
 
+    {
+        const mod_tests = b.addTest(.{ .root_module = mod });
+        const run_mod_tests = b.addRunArtifact(mod_tests);
+        ctx.test_step.dependOn(&run_mod_tests.step);
+    }
+
     for (0..5) |i| {
         try addDayExeAndTests(&ctx, i + 1);
     }
