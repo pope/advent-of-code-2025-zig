@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) !void {
         ctx.test_step.dependOn(&run_mod_tests.step);
     }
 
-    for (0..5) |i| {
+    for (0..6) |i| {
         try addDayExeAndTests(&ctx, i + 1);
     }
 }

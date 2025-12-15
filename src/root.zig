@@ -74,7 +74,10 @@ pub const LineIterator = union(enum) {
 
     pub fn peek(self: *Self) !?[]const u8 {
         return switch (self.*) {
-            .reader => |r| r.peekDelimiterExclusive('\n'),
+            .reader => |r| blk: {
+                const b = try r.peekDelimiterExclusive('\n');
+                break :blk b;
+            },
             .split => |*it| it.*.peek(),
         };
     }
