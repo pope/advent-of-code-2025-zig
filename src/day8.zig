@@ -77,7 +77,11 @@ fn parseInput(alloc: std.mem.Allocator, line_it: *aoc.LineIterator) ![]Vec4 {
     var result: std.ArrayList(Vec4) = .empty;
     defer result.deinit(alloc);
     while (try line_it.next()) |line| {
-        var it = std.mem.splitScalar(u8, line, ',');
+        var it = std.mem.splitScalar(
+            u8,
+            line,
+            ',',
+        );
         switch (@typeInfo(vec_type)) {
             .float => {
                 const x = try std.fmt.parseFloat(
@@ -225,6 +229,10 @@ const test_input =
 test "day 8 - part 1" {
     var line_it = aoc.LineIterator.initFromBuffer(test_input);
 
-    const result = try part1Answer(std.testing.allocator, &line_it, 10);
+    const result = try part1Answer(
+        std.testing.allocator,
+        &line_it,
+        10,
+    );
     try std.testing.expectEqual(40, result);
 }
