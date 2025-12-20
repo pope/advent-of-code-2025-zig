@@ -155,7 +155,11 @@ fn getTopClosestPairs(
     return top;
 }
 
-fn part1Answer(alloc: std.mem.Allocator, line_it: *aoc.LineIterator, top_num: usize) !u64 {
+fn part1Answer(
+    alloc: std.mem.Allocator,
+    line_it: *aoc.LineIterator,
+    top_num: usize,
+) !u64 {
     const boxes = try parseInput(alloc, line_it);
     defer alloc.free(boxes);
 
@@ -181,15 +185,13 @@ fn part1Answer(alloc: std.mem.Allocator, line_it: *aoc.LineIterator, top_num: us
     // = 1 - no connections
     // = 0 - not a root, belongs to someone else
     const sizes = try alloc.alloc(u16, boxes.len);
-    {
-        @memset(sizes, 0);
-        defer alloc.free(sizes);
+    @memset(sizes, 0);
+    defer alloc.free(sizes);
 
-        for (0..boxes.len) |idx| {
-            sizes[d_set.root(@intCast(idx))] += 1;
-        }
-        std.mem.sort(u16, sizes, {}, std.sort.desc(u16));
+    for (0..boxes.len) |idx| {
+        sizes[d_set.root(@intCast(idx))] += 1;
     }
+    std.mem.sort(u16, sizes, {}, std.sort.desc(u16));
 
     const a: u64 = @intCast(sizes[0]);
     const b: u64 = @intCast(sizes[1]);
