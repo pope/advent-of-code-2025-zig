@@ -10,10 +10,21 @@ pub fn main() !void {
     std.debug.print("08.1: Answer = {}\n", .{
         try part1Answer(setup.allocator(), &it, 1000),
     });
+
+    try setup.reset();
+
+    std.debug.print("08.2: Answer = {}\n", .{
+        try part2Answer(setup.allocator(), &it),
+    });
 }
 
-// Element type can be a float or int. Messing around for fun.
-const Vec4 = @Vector(4, i64);
+// Element type can be a float or int. Messing around for fun.  As a result,
+// the code in this file is pretty dang funky at parts, but all in the spirit
+// of learning.
+//
+// At the end of this experiment, f32 is performing better than i64 in debug
+// mode. In release mode, it's a wash.
+const Vec4 = @Vector(4, f32);
 
 const Vec4Pair = struct {
     a_idx: u16,
@@ -44,6 +55,12 @@ fn relativeDistance(a: Vec4, b: Vec4) @typeInfo(Vec4).vector.child {
     // distance, and thus can save a calculation.
     return @reduce(.Add, sqrd);
 }
+
+const Vec4PairHeap = std.PriorityQueue(
+    Vec4Pair,
+    void,
+    Vec4Pair.lessThan,
+);
 
 const DisjointSet = struct {
     parents: []u16,
@@ -124,21 +141,13 @@ fn parseInput(alloc: std.mem.Allocator, line_it: *aoc.LineIterator) ![]Vec4 {
     return result.toOwnedSlice(alloc);
 }
 
-fn getTopClosestPairs(
+fn getPairsHeap(
     alloc: std.mem.Allocator,
     boxes: []const Vec4,
-    top_num: usize,
-) !std.ArrayList(Vec4Pair) {
-    var top: std.ArrayList(Vec4Pair) = try .initCapacity(alloc, top_num);
-    errdefer top.deinit(alloc);
+) !Vec4PairHeap {
+    var heap: Vec4PairHeap = .init(alloc, {});
+    errdefer heap.deinit();
 
-    // Using a heap because it's too many to sort quickly
-    var heap: std.PriorityQueue(
-        Vec4Pair,
-        void,
-        Vec4Pair.lessThan,
-    ) = .init(alloc, {});
-    defer heap.deinit();
     // Close enough size to avoid re-allocs.
     try heap.ensureTotalCapacity(std.math.pow(usize, boxes.len, 2) / 2);
 
@@ -152,11 +161,7 @@ fn getTopClosestPairs(
             });
         }
     }
-
-    for (0..top_num) |_| {
-        try top.appendBounded(heap.remove());
-    }
-    return top;
+    return heap;
 }
 
 fn part1Answer(
@@ -172,15 +177,17 @@ fn part1Answer(
 
     // Merge the top `n` pairs into circuits
     {
-        var top_pairs: std.ArrayList(Vec4Pair) = try getTopClosestPairs(
+        var pair_heap = try getPairsHeap(
             alloc,
             boxes,
-            top_num,
         );
-        defer top_pairs.deinit(alloc);
+        defer pair_heap.deinit();
 
-        for (top_pairs.items) |p| {
+        var count: usize = 0;
+        while (pair_heap.removeOrNull()) |p| {
             d_set.merge(p.a_idx, p.b_idx);
+            count += 1;
+            if (count >= top_num) break;
         }
     }
 
@@ -201,6 +208,40 @@ fn part1Answer(
     const b: u64 = @intCast(sizes[1]);
     const c: u64 = @intCast(sizes[2]);
     return a * b * c;
+}
+
+fn part2Answer(
+    alloc: std.mem.Allocator,
+    line_it: *aoc.LineIterator,
+) !u64 {
+    const boxes = try parseInput(alloc, line_it);
+    defer alloc.free(boxes);
+
+    const d_set: DisjointSet = try .init(alloc, @intCast(boxes.len));
+    defer d_set.deinit(alloc);
+
+    var pair_heap = try getPairsHeap(
+        alloc,
+        boxes,
+    );
+    defer pair_heap.deinit();
+
+    var remaining = boxes.len;
+    while (pair_heap.removeOrNull()) |p| {
+        if (d_set.root(p.a_idx) == d_set.root(p.b_idx)) continue;
+        d_set.merge(p.a_idx, p.b_idx);
+        remaining -= 1;
+        if (remaining == 1) {
+            const res = boxes[p.a_idx][0] * boxes[p.b_idx][0];
+            return switch (@typeInfo(@typeInfo(Vec4).vector.child)) {
+                .int => @intCast(res),
+                .float => @intFromFloat(res),
+                else => @compileError("Unsupported type"),
+            };
+        }
+    }
+
+    return error.Oops;
 }
 
 const test_input =
@@ -235,4 +276,14 @@ test "day 8 - part 1" {
         10,
     );
     try std.testing.expectEqual(40, result);
+}
+
+test "day 8 - part 2" {
+    var line_it = aoc.LineIterator.initFromBuffer(test_input);
+
+    const result = try part2Answer(
+        std.testing.allocator,
+        &line_it,
+    );
+    try std.testing.expectEqual(25272, result);
 }
