@@ -12,23 +12,24 @@ pub fn main() !void {
     try part2(&reader.interface);
 }
 
+fn parseRange(comptime T: type, input: []const u8) !struct { T, T } {
+    const i = std.mem.indexOf(
+        u8,
+        input,
+        "-",
+    ) orelse return error.Oops;
+    const a = try std.fmt.parseInt(T, input[0..i], 10);
+    const b = try std.fmt.parseInt(T, input[i + 1 ..], 10);
+    return .{ a, b };
+}
+
 fn part1(r: *std.io.Reader) !void {
     var id_str_buf: [32]u8 = undefined;
     var sum: u64 = 0;
     while (try r.takeDelimiter(',')) |input| {
-        const start, const end = blk: {
-            const i = std.mem.indexOf(
-                u8,
-                input,
-                "-",
-            ) orelse return error.Oops;
-            const a = try std.fmt.parseInt(u64, input[0..i], 10);
-            const b = try std.fmt.parseInt(u64, input[i + 1 ..], 10);
-            break :blk .{ a, b };
-        };
+        const start, const end = try parseRange(u64, input);
 
-        var id = start;
-        while (id <= end) : (id += 1) {
+        for (start..end + 1) |id| {
             const id_str = try std.fmt.bufPrint(
                 &id_str_buf,
                 "{d}",
@@ -52,25 +53,15 @@ fn part2(r: *std.io.Reader) !void {
     var id_str_buf: [32]u8 = undefined;
     var sum: u64 = 0;
     while (try r.takeDelimiter(',')) |input| {
-        const start, const end = blk: {
-            const i = std.mem.indexOf(
-                u8,
-                input,
-                "-",
-            ) orelse return error.Oops;
-            const a = try std.fmt.parseInt(u64, input[0..i], 10);
-            const b = try std.fmt.parseInt(u64, input[i + 1 ..], 10);
-            break :blk .{ a, b };
-        };
+        const start, const end = try parseRange(u64, input);
 
-        var id = start;
-        while (id <= end) : (id += 1) {
+        for (start..end + 1) |id| {
             const id_str = try std.fmt.bufPrint(
                 &id_str_buf,
                 "{d}",
                 .{id},
             );
-            group: for (2..id_str.len + 2) |divisor| {
+            group: for (2..id_str.len + 1) |divisor| {
                 if (id_str.len % divisor != 0) continue;
                 const len = id_str.len / divisor;
                 for (0..divisor - 1) |i| {
@@ -153,27 +144,9 @@ test "day 2 - part 1" {
     for (test_data) |data| {
         defer list.clearRetainingCapacity();
 
-        const start, const end = blk: {
-            const i = std.mem.indexOf(
-                u8,
-                data.input,
-                "-",
-            ) orelse return error.Oops;
-            const a = try std.fmt.parseInt(
-                u32,
-                data.input[0..i],
-                10,
-            );
-            const b = try std.fmt.parseInt(
-                u32,
-                data.input[i + 1 ..],
-                10,
-            );
-            break :blk .{ a, b };
-        };
+        const start, const end = try parseRange(u32, data.input);
 
-        var id = start;
-        while (id <= end) : (id += 1) {
+        for (start..end + 1) |id| {
             const id_str = try std.fmt.bufPrint(
                 &buf,
                 "{d}",
@@ -185,7 +158,7 @@ test "day 2 - part 1" {
                 id_str[0 .. id_str.len / 2],
                 id_str[id_str.len / 2 ..],
             )) {
-                try list.append(alloc, id);
+                try list.append(alloc, @intCast(id));
                 actual_sum += id;
             }
         }
@@ -260,27 +233,9 @@ test "day 2 - part 2" {
     for (test_data) |data| {
         defer list.clearRetainingCapacity();
 
-        const start, const end = blk: {
-            const i = std.mem.indexOf(
-                u8,
-                data.input,
-                "-",
-            ) orelse return error.Oops;
-            const a = try std.fmt.parseInt(
-                u32,
-                data.input[0..i],
-                10,
-            );
-            const b = try std.fmt.parseInt(
-                u32,
-                data.input[i + 1 ..],
-                10,
-            );
-            break :blk .{ a, b };
-        };
+        const start, const end = try parseRange(u32, data.input);
 
-        var id = start;
-        while (id <= end) : (id += 1) {
+        for (start..end + 1) |id| {
             const id_str = try std.fmt.bufPrint(
                 &buf,
                 "{d}",
@@ -298,7 +253,7 @@ test "day 2 - part 2" {
                         continue :group;
                     }
                 }
-                try list.append(alloc, id);
+                try list.append(alloc, @intCast(id));
                 actual_sum += id;
                 break;
             }
