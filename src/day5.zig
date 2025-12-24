@@ -28,7 +28,7 @@ pub fn main() !void {
 fn part1Answer(
     comptime T: type,
     ranges: []const Range(T),
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
 ) !u16 {
     var num_fresh: u16 = 0;
     while (try it.next()) |line| {
@@ -102,7 +102,7 @@ fn compressRanges(
 fn processRanges(
     comptime T: type,
     alloc: std.mem.Allocator,
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
 ) !std.ArrayList(Range(T)) {
     var ranges: std.ArrayList(Range(T)) = .empty;
     while (try it.next()) |line| {
@@ -133,7 +133,7 @@ const test_input =
 test "day 5 - part 1" {
     const size_type = u8;
 
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
     var ranges = try processRanges(
         size_type,
         std.testing.allocator,
@@ -158,7 +158,7 @@ test "day 5 - part 1" {
 test "day 5 - part 2" {
     const size_type = u8;
 
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
     var ranges = try processRanges(
         size_type,
         std.testing.allocator,

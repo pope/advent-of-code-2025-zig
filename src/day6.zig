@@ -24,7 +24,7 @@ const Operator = enum { add, multiply };
 
 fn part1ProcessInput(
     comptime T: type,
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
     alloc_in: std.mem.Allocator,
 ) !u64 {
     var arena = std.heap.ArenaAllocator.init(alloc_in);
@@ -120,7 +120,7 @@ fn part1ProcessInput(
 }
 
 fn part2ProcessInput(
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
     alloc_in: std.mem.Allocator,
 ) !u64 {
     var arena = std.heap.ArenaAllocator.init(alloc_in);
@@ -238,7 +238,8 @@ const test_input =
 ;
 
 test "day 6 - part 1" {
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
+
     const total = try part1ProcessInput(
         u16,
         &it,
@@ -249,7 +250,8 @@ test "day 6 - part 1" {
 }
 
 test "day 6 - part 2" {
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
+
     const total = try part2ProcessInput(
         &it,
         std.testing.allocator,

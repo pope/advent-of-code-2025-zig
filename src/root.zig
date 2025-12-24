@@ -37,9 +37,13 @@ pub const Setup = struct {
         return &self.opt_reader.?;
     }
 
-    pub fn lineIterator(self: *Setup) LineIterator {
+    pub inline fn lineIterator(self: *Setup) InputIterator {
+        return self.inputIterator('\n');
+    }
+
+    pub fn inputIterator(self: *Setup, delim: u8) InputIterator {
         var r = self.reader();
-        return .{ .reader = &r.interface };
+        return .{ .reader = .{ &r.interface, delim } };
     }
 
     pub fn deinit(self: *Setup) void {
@@ -51,23 +55,23 @@ pub const Setup = struct {
     }
 };
 
-pub const LineIterator = union(enum) {
+pub const InputIterator = union(enum) {
     const Self = @This();
 
-    reader: *std.io.Reader,
+    reader: struct { *std.io.Reader, u8 },
     split: std.mem.SplitIterator(u8, .scalar),
 
-    pub fn initFromBuffer(buf: []const u8) Self {
+    pub fn initFromBuffer(buf: []const u8, delim: u8) Self {
         return .{ .split = std.mem.splitScalar(
             u8,
             buf,
-            '\n',
+            delim,
         ) };
     }
 
     pub fn next(self: *Self) !?[]const u8 {
         return switch (self.*) {
-            .reader => |r| r.takeDelimiter('\n'),
+            .reader => |r| r[0].takeDelimiter(r[1]),
             .split => |*it| it.*.next(),
         };
     }
@@ -75,7 +79,7 @@ pub const LineIterator = union(enum) {
     pub fn peek(self: *Self) !?[]const u8 {
         return switch (self.*) {
             .reader => |r| blk: {
-                const b = try r.peekDelimiterExclusive('\n');
+                const b = try r[0].peekDelimiterExclusive(r[1]);
                 break :blk b;
             },
             .split => |*it| it.*.peek(),
@@ -83,13 +87,13 @@ pub const LineIterator = union(enum) {
     }
 };
 
-test "LineIterator - split" {
+test "InputIterator - split" {
     const input =
         \\One
         \\Two
         \\Three
     ;
-    var it = LineIterator.initFromBuffer(input);
+    var it = InputIterator.initFromBuffer(input, '\n');
 
     try std.testing.expectEqualStrings("One", (try it.next()).?);
     try std.testing.expectEqualStrings("Two", (try it.next()).?);
@@ -97,7 +101,7 @@ test "LineIterator - split" {
     try std.testing.expectEqual(null, try it.next());
 }
 
-test "LineIterator - reader" {
+test "InputIterator - reader" {
     const input =
         \\One
         \\Two
@@ -107,7 +111,9 @@ test "LineIterator - reader" {
     var reader: std.testing.Reader = .init(&buf, &.{
         .{ .buffer = input },
     });
-    var it: LineIterator = .{ .reader = &reader.interface };
+    var it: InputIterator = .{
+        .reader = .{ &reader.interface, '\n' },
+    };
 
     try std.testing.expectEqualStrings("One", (try it.next()).?);
     try std.testing.expectEqualStrings("Two", (try it.next()).?);

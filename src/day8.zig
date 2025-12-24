@@ -89,7 +89,7 @@ const DisjointSet = struct {
     }
 };
 
-fn parseInput(alloc: std.mem.Allocator, line_it: *aoc.LineIterator) ![]Vec4 {
+fn parseInput(alloc: std.mem.Allocator, line_it: *aoc.InputIterator) ![]Vec4 {
     const vec_type = @typeInfo(Vec4).vector.child;
     var result: std.ArrayList(Vec4) = .empty;
     defer result.deinit(alloc);
@@ -166,7 +166,7 @@ fn getPairsHeap(
 
 fn part1Answer(
     alloc: std.mem.Allocator,
-    line_it: *aoc.LineIterator,
+    line_it: *aoc.InputIterator,
     top_num: usize,
 ) !u64 {
     const boxes = try parseInput(alloc, line_it);
@@ -212,7 +212,7 @@ fn part1Answer(
 
 fn part2Answer(
     alloc: std.mem.Allocator,
-    line_it: *aoc.LineIterator,
+    line_it: *aoc.InputIterator,
 ) !u64 {
     const boxes = try parseInput(alloc, line_it);
     defer alloc.free(boxes);
@@ -268,22 +268,22 @@ const test_input =
 ;
 
 test "day 8 - part 1" {
-    var line_it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
 
     const result = try part1Answer(
         std.testing.allocator,
-        &line_it,
+        &it,
         10,
     );
     try std.testing.expectEqual(40, result);
 }
 
 test "day 8 - part 2" {
-    var line_it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
 
     const result = try part2Answer(
         std.testing.allocator,
-        &line_it,
+        &it,
     );
     try std.testing.expectEqual(25272, result);
 }

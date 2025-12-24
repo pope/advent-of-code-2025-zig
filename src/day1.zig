@@ -4,19 +4,18 @@ const aoc = @import("aoc");
 pub fn main() !void {
     var setup: aoc.Setup = try .init("day1-input");
     defer setup.deinit();
+    var it = setup.lineIterator();
 
-    var reader = setup.reader();
-    try part1(&reader.interface);
-
-    try reader.seekTo(0);
-    try part2(&reader.interface);
+    try part1(&it);
+    try setup.reset();
+    try part2(&it);
 }
 
-fn part1(reader: *std.io.Reader) !void {
+fn part1(it: *aoc.InputIterator) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    while (try reader.takeDelimiter('\n')) |line| {
+    while (try it.next()) |line| {
         const new_dial, const new_count = try part1ProcessLine(
             line,
             dial,
@@ -27,11 +26,11 @@ fn part1(reader: *std.io.Reader) !void {
     std.debug.print("01.1: Password = {d}\n", .{count});
 }
 
-fn part2(reader: *std.io.Reader) !void {
+fn part2(it: *aoc.InputIterator) !void {
     var dial: i16 = 50;
     var count: u16 = 0;
 
-    while (try reader.takeDelimiter('\n')) |line| {
+    while (try it.next()) |line| {
         const new_dial, const new_count = try part2ProcessLine(
             line,
             dial,

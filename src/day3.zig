@@ -5,16 +5,16 @@ pub fn main() !void {
     var setup: aoc.Setup = try .init("day3-input");
     defer setup.deinit();
 
-    var reader = setup.reader();
-    try part1(&reader.interface);
+    var it = setup.lineIterator();
+    try part1(&it);
 
-    try reader.seekTo(0);
-    try part2(setup.allocator(), &reader.interface);
+    try setup.reset();
+    try part2(setup.allocator(), &it);
 }
 
-fn part1(reader: *std.io.Reader) !void {
+fn part1(it: *aoc.InputIterator) !void {
     var sum: u16 = 0;
-    while (try reader.takeDelimiter('\n')) |input| {
+    while (try it.next()) |input| {
         sum += part1Process(input);
     }
     std.debug.print("03.1: Joltage = {}\n", .{sum});
@@ -28,9 +28,9 @@ fn part1Process(input: []const u8) u16 {
     return tens + ones;
 }
 
-fn part2(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
+fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
     var sum: u64 = 0;
-    while (try reader.takeDelimiter('\n')) |input| {
+    while (try it.next()) |input| {
         sum += try part2Process(alloc, input);
     }
     std.debug.print("03.1: Joltage = {}\n", .{sum});

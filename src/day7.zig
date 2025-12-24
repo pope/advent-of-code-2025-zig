@@ -27,7 +27,7 @@ const Tile = enum {
 
 fn part1Answer(
     arena: *std.heap.ArenaAllocator,
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
 ) !struct {
     []const []const Tile,
     u64,
@@ -65,7 +65,7 @@ fn part1Answer(
 
 fn part2Answer(
     arena: *std.heap.ArenaAllocator,
-    it: *aoc.LineIterator,
+    it: *aoc.InputIterator,
 ) !u64 {
     const data = try parseInput(arena, it);
 
@@ -106,7 +106,7 @@ fn part2Answer(
     return timelines;
 }
 
-fn parseInput(arena: *std.heap.ArenaAllocator, it: *aoc.LineIterator) ![][]Tile {
+fn parseInput(arena: *std.heap.ArenaAllocator, it: *aoc.InputIterator) ![][]Tile {
     const alloc = arena.allocator();
 
     const line_len = blk: {
@@ -182,7 +182,7 @@ test "day 7 - part 1" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
 
     const data, const splits = try part1Answer(&arena, &it);
 
@@ -218,7 +218,7 @@ test "day 7 - part 2" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
-    var it = aoc.LineIterator.initFromBuffer(test_input);
+    var it: aoc.InputIterator = .initFromBuffer(test_input, '\n');
 
     const timelines = try part2Answer(&arena, &it);
     try std.testing.expectEqual(40, timelines);

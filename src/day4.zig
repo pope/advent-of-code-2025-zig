@@ -6,23 +6,23 @@ const padding = 2;
 pub fn main() !void {
     var setup: aoc.Setup = try .init("day4-input");
     defer setup.deinit();
+    var it = setup.lineIterator();
 
-    var reader = setup.reader();
-    try part1(setup.allocator(), &reader.interface);
+    try part1(setup.allocator(), &it);
 
-    try reader.seekTo(0);
-    try part2(setup.allocator(), &reader.interface);
+    try setup.reset();
+    try part2(setup.allocator(), &it);
 }
 
-fn part1(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
+fn part1(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
-    const len = (try reader.peekDelimiterExclusive('\n')).len;
+    const len = (try it.peek()).?.len;
 
     var input: std.ArrayList([]u8) = .empty;
     try inputListAddPaddingRow(&arena, &input, len);
-    while (try reader.takeDelimiter('\n')) |row| {
+    while (try it.next()) |row| {
         std.debug.assert(row.len == len);
         try inputListAddRow(&arena, &input, row);
     }
@@ -40,15 +40,15 @@ fn part1(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
     std.debug.print("04.1: Rolls = {d}\n", .{count});
 }
 
-fn part2(alloc: std.mem.Allocator, reader: *std.io.Reader) !void {
+fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
-    const len = (try reader.peekDelimiterExclusive('\n')).len;
+    const len = (try it.peek()).?.len;
 
     var input: std.ArrayList([]u8) = .empty;
     try inputListAddPaddingRow(&arena, &input, len);
-    while (try reader.takeDelimiter('\n')) |row| {
+    while (try it.next()) |row| {
         std.debug.assert(row.len == len);
         try inputListAddRow(&arena, &input, row);
     }
@@ -258,14 +258,11 @@ test "day 4 - part 1" {
         14 + padding,
     );
     {
-        var it = std.mem.splitScalar(
-            u8,
-            data,
-            '\n',
-        );
-        const len = it.peek().?.len;
+        var it: aoc.InputIterator = .initFromBuffer(data, '\n');
+
+        const len = (try it.peek()).?.len;
         try inputListAddPaddingRow(&arena, &input, len);
-        while (it.next()) |line| {
+        while (try it.next()) |line| {
             std.debug.assert(line.len == len);
             try inputListAddRow(&arena, &input, line);
         }
@@ -468,14 +465,10 @@ test "day 4 - part 2" {
         14 + padding,
     );
     {
-        var it = std.mem.splitScalar(
-            u8,
-            data,
-            '\n',
-        );
-        const len = it.peek().?.len;
+        var it: aoc.InputIterator = .initFromBuffer(data, '\n');
+        const len = (try it.peek()).?.len;
         try inputListAddPaddingRow(&arena, &input, len);
-        while (it.next()) |line| {
+        while (try it.next()) |line| {
             std.debug.assert(line.len == len);
             try inputListAddRow(&arena, &input, line);
         }
