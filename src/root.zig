@@ -43,7 +43,7 @@ pub const Setup = struct {
 
     pub fn inputIterator(self: *Setup, delim: u8) InputIterator {
         var r = self.reader();
-        return .{ .reader = .{ &r.interface, delim } };
+        return .initFromReader(&r.interface, delim);
     }
 
     pub fn deinit(self: *Setup) void {
@@ -55,11 +55,64 @@ pub const Setup = struct {
     }
 };
 
+const GenericInputIterator = struct {
+    ptr: *anyopaque,
+    peekFn: *const fn (ptr: *anyopaque) ?[]const u8,
+    nextFn: *const fn (ptr: *anyopaque) ?[]const u8,
+
+    fn peek(self: GenericInputIterator) ?[]const u8 {
+        return self.peekFn(self.ptr);
+    }
+
+    fn next(self: GenericInputIterator) ?[]const u8 {
+        return self.nextFn(self.ptr);
+    }
+};
+
+pub fn SliceStructIterable(
+    comptime T: type,
+    comptime name: []const u8,
+) type {
+    return struct {
+        const Self = @This();
+
+        data: []const T,
+        cur: usize,
+
+        pub fn init(data: []const T) Self {
+            return .{ .data = data, .cur = 0 };
+        }
+
+        pub fn iterator(self: *Self) GenericInputIterator {
+            return .{
+                .ptr = self,
+                .peekFn = peek,
+                .nextFn = next,
+            };
+        }
+
+        fn peek(ptr: *anyopaque) ?[]const u8 {
+            const self: *Self = @ptrCast(@alignCast(ptr));
+            if (self.cur + 1 >= self.data.len) return null;
+            return @field(self.data[self.cur + 1], name);
+        }
+
+        fn next(ptr: *anyopaque) ?[]const u8 {
+            const self: *Self = @ptrCast(@alignCast(ptr));
+            if (self.cur >= self.data.len) return null;
+            const result = @field(self.data[self.cur], name);
+            self.cur += 1;
+            return result;
+        }
+    };
+}
+
 pub const InputIterator = union(enum) {
     const Self = @This();
 
     reader: struct { *std.io.Reader, u8 },
     split: std.mem.SplitIterator(u8, .scalar),
+    it: GenericInputIterator,
 
     pub fn initFromBuffer(buf: []const u8, delim: u8) Self {
         return .{ .split = std.mem.splitScalar(
@@ -69,10 +122,19 @@ pub const InputIterator = union(enum) {
         ) };
     }
 
+    pub fn initFromReader(r: *std.io.Reader, delim: u8) Self {
+        return .{ .reader = .{ r, delim } };
+    }
+
+    pub fn initFromIterator(it: GenericInputIterator) Self {
+        return .{ .it = it };
+    }
+
     pub fn next(self: *Self) !?[]const u8 {
         return switch (self.*) {
             .reader => |r| r[0].takeDelimiter(r[1]),
             .split => |*it| it.*.next(),
+            .it => |*it| it.*.next(),
         };
     }
 
@@ -83,6 +145,7 @@ pub const InputIterator = union(enum) {
                 break :blk b;
             },
             .split => |*it| it.*.peek(),
+            .it => |*it| it.*.peek(),
         };
     }
 };
@@ -111,13 +174,36 @@ test "InputIterator - reader" {
     var reader: std.testing.Reader = .init(&buf, &.{
         .{ .buffer = input },
     });
-    var it: InputIterator = .{
-        .reader = .{ &reader.interface, '\n' },
-    };
+    var it: InputIterator = .initFromReader(&reader.interface, '\n');
 
     try std.testing.expectEqualStrings("One", (try it.next()).?);
     try std.testing.expectEqualStrings("Two", (try it.next()).?);
     try std.testing.expectEqualStrings("Three", (try it.next()).?);
+    try std.testing.expectEqual(null, try it.next());
+}
+
+test "InputIterator - generic iterator" {
+    const test_input = [_]struct {
+        input: []const u8,
+    }{
+        .{ .input = "One" },
+        .{ .input = "Two" },
+        .{ .input = "Three" },
+    };
+
+    var slice_iterable = SliceStructIterable(
+        @TypeOf(test_input[0]),
+        "input",
+    ).init(&test_input);
+    var it: InputIterator = .initFromIterator(slice_iterable.iterator());
+
+    try std.testing.expectEqualStrings("Two", (try it.peek()).?);
+    try std.testing.expectEqualStrings("One", (try it.next()).?);
+    try std.testing.expectEqualStrings("Three", (try it.peek()).?);
+    try std.testing.expectEqualStrings("Two", (try it.next()).?);
+    try std.testing.expectEqual(null, try it.peek());
+    try std.testing.expectEqualStrings("Three", (try it.next()).?);
+    try std.testing.expectEqual(null, try it.peek());
     try std.testing.expectEqual(null, try it.next());
 }
 
