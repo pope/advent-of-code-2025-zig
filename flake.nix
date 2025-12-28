@@ -11,6 +11,7 @@
   outputs =
     {
       nixpkgs,
+      self,
       systems,
       treefmt-nix,
       ...
@@ -73,7 +74,7 @@
       });
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
       checks = eachSystem (pkgs: {
-        treefmt = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper;
+        treefmt = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
       });
     };
 }
