@@ -1,28 +1,32 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
 const padding = 2;
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day4-input");
-    defer setup.deinit();
-    var it = setup.lineIterator();
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day4-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    try part1(setup.allocator(), &it);
+    const p1a = try part1(alloc, &it);
+    it.reset();
+    const p2a = try part2(alloc, &it);
 
-    try setup.reset();
-    try part2(setup.allocator(), &it);
+    return .{
+        .day = 4,
+        .part1 = .initResult("Rolls", p1a),
+        .part2 = .initResult("Rolls", p2a),
+    };
 }
 
-fn part1(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
+fn part1(alloc: std.mem.Allocator, it: *aoc.InputIterator) !u64 {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
-    const len = (try it.peek()).?.len;
+    const len = it.peek().?.len;
 
     var input: std.ArrayList([]u8) = .empty;
     try inputListAddPaddingRow(&arena, &input, len);
-    while (try it.next()) |row| {
+    while (it.next()) |row| {
         std.debug.assert(row.len == len);
         try inputListAddRow(&arena, &input, row);
     }
@@ -34,21 +38,18 @@ fn part1(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
         output.items,
         std.simd.suggestVectorLength(u8) orelse 8,
     );
-
-    const count = countMovableRolls(output.items);
-
-    std.debug.print("04.1: Rolls = {d}\n", .{count});
+    return countMovableRolls(output.items);
 }
 
-fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
+fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !u64 {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
-    const len = (try it.peek()).?.len;
+    const len = it.peek().?.len;
 
     var input: std.ArrayList([]u8) = .empty;
     try inputListAddPaddingRow(&arena, &input, len);
-    while (try it.next()) |row| {
+    while (it.next()) |row| {
         std.debug.assert(row.len == len);
         try inputListAddRow(&arena, &input, row);
     }
@@ -70,8 +71,7 @@ fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
 
         input, output = switchAndReset(input, output);
     }
-
-    std.debug.print("04.2: Rolls = {d}\n", .{count});
+    return count;
 }
 
 inline fn inputListAddPaddingRow(
@@ -260,9 +260,9 @@ test "day 4 - part 1" {
     {
         var it: aoc.InputIterator = .initFromBuffer(data, '\n');
 
-        const len = (try it.peek()).?.len;
+        const len = it.peek().?.len;
         try inputListAddPaddingRow(&arena, &input, len);
-        while (try it.next()) |line| {
+        while (it.next()) |line| {
             std.debug.assert(line.len == len);
             try inputListAddRow(&arena, &input, line);
         }
@@ -466,9 +466,9 @@ test "day 4 - part 2" {
     );
     {
         var it: aoc.InputIterator = .initFromBuffer(data, '\n');
-        const len = (try it.peek()).?.len;
+        const len = it.peek().?.len;
         try inputListAddPaddingRow(&arena, &input, len);
-        while (try it.next()) |line| {
+        while (it.next()) |line| {
             std.debug.assert(line.len == len);
             try inputListAddRow(&arena, &input, line);
         }

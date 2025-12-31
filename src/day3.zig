@@ -1,23 +1,27 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day3-input");
-    defer setup.deinit();
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day3-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    var it = setup.lineIterator();
-    try part1(&it);
+    const p1a = try part1(&it);
+    it.reset();
+    const p2a = try part2(alloc, &it);
 
-    try setup.reset();
-    try part2(setup.allocator(), &it);
+    return .{
+        .day = 3,
+        .part1 = .initResult("Joltage", p1a),
+        .part2 = .initResult("Joltage", p2a),
+    };
 }
 
-fn part1(it: *aoc.InputIterator) !void {
-    var sum: u16 = 0;
-    while (try it.next()) |input| {
+fn part1(it: *aoc.InputIterator) !u64 {
+    var sum: u64 = 0;
+    while (it.next()) |input| {
         sum += part1Process(input);
     }
-    std.debug.print("03.1: Joltage = {}\n", .{sum});
+    return sum;
 }
 
 fn part1Process(input: []const u8) u16 {
@@ -28,12 +32,12 @@ fn part1Process(input: []const u8) u16 {
     return tens + ones;
 }
 
-fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !void {
+fn part2(alloc: std.mem.Allocator, it: *aoc.InputIterator) !u64 {
     var sum: u64 = 0;
-    while (try it.next()) |input| {
+    while (it.next()) |input| {
         sum += try part2Process(alloc, input);
     }
-    std.debug.print("03.1: Joltage = {}\n", .{sum});
+    return sum;
 }
 
 fn part2Process(alloc: std.mem.Allocator, input: []const u8) !u64 {

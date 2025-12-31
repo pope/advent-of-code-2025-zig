@@ -1,15 +1,17 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day2-input");
-    defer setup.deinit();
-
-    var it = setup.inputIterator(',');
-    try part1(&it);
-
-    try setup.reset();
-    try part2(&it);
+pub fn solve(_: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day2-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, ',');
+    const p1a = try part1(&it);
+    it.reset();
+    const p2a = try part2(&it);
+    return .{
+        .day = 2,
+        .part1 = .initResult("Password", p1a),
+        .part2 = .initResult("Password", p2a),
+    };
 }
 
 // Shout-outs to github.com/maneatingape/advent-of-code-rust for this idea on
@@ -41,25 +43,25 @@ const part_2_double_counted_patterns = [_]Pattern{
     .init(2 * 5, 1),
 };
 
-fn part1(it: *aoc.InputIterator) !void {
+fn part1(it: *aoc.InputIterator) !u64 {
     const sum = try processPattern(
         it,
         &part_1_patterns,
         part_1_patterns[0..0], // Empty, no exclusions
         .noDebug(),
     );
-    std.debug.print("02.1: Password = {d}\n", .{sum});
+    return sum;
 }
 
 // Reworked to use the arithmetic sum
-fn part2(it: *aoc.InputIterator) !void {
+fn part2(it: *aoc.InputIterator) !u64 {
     const sum = try processPattern(
         it,
         &part_2_patterns,
         &part_2_double_counted_patterns,
         .noDebug(),
     );
-    std.debug.print("02.2: Password = {d}\n", .{sum});
+    return sum;
 }
 
 /// A context object for capturing debug information - which numbers were
@@ -110,7 +112,7 @@ fn processPattern(
     debug_context: DebugContext,
 ) !u64 {
     var sum: u64 = 0;
-    while (try it.next()) |input| {
+    while (it.next()) |input| {
         const start, const end = try parseRange(u64, input);
         sum += try arithmeticSum(
             patterns,

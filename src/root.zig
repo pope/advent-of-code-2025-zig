@@ -1,64 +1,38 @@
 const std = @import("std");
 
-pub const Setup = struct {
-    gpa: std.heap.GeneralPurposeAllocator(.{}),
-    file: std.fs.File,
-    file_buffer: [4096]u8,
-    opt_reader: ?std.fs.File.Reader,
+pub const AnswerValue = union(enum) {
+    todo: void,
+    result: struct { label: []const u8, val: u64 },
 
-    pub fn init(input_name: []const u8) !Setup {
-        var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
-        errdefer _ = gpa.deinit();
-
-        var f = try loadInput(gpa.allocator(), input_name);
-        errdefer f.close();
-
-        return .{
-            .gpa = gpa,
-            .file = f,
-            .file_buffer = undefined,
-            .opt_reader = null,
-        };
+    pub fn initResult(label: []const u8, val: u64) AnswerValue {
+        return .{ .result = .{
+            .label = label,
+            .val = val,
+        } };
     }
 
-    pub fn allocator(self: *Setup) std.mem.Allocator {
-        return self.gpa.allocator();
+    pub fn write(self: AnswerValue, w: *std.io.Writer) !void {
+        switch (self) {
+            .todo => _ = try w.write("TODO"),
+            .result => |r| try w.print(
+                "{s} = {d}",
+                .{ r.label, r.val },
+            ),
+        }
     }
+};
 
-    pub fn reset(self: *Setup) !void {
-        return self.reader().seekTo(0);
-    }
-
-    pub fn reader(self: *Setup) *std.fs.File.Reader {
-        if (self.opt_reader) |*r| return r;
-
-        const r = self.file.reader(&self.file_buffer);
-        self.opt_reader = r;
-        return &self.opt_reader.?;
-    }
-
-    pub inline fn lineIterator(self: *Setup) InputIterator {
-        return self.inputIterator('\n');
-    }
-
-    pub fn inputIterator(self: *Setup, delim: u8) InputIterator {
-        var r = self.reader();
-        return .initFromReader(&r.interface, delim);
-    }
-
-    pub fn deinit(self: *Setup) void {
-        self.opt_reader = null;
-        self.file.close();
-
-        const leaked = self.gpa.deinit();
-        if (leaked == .leak) @panic("Memory leak detected!");
-    }
+pub const Answer = struct {
+    part1: AnswerValue,
+    part2: AnswerValue,
+    day: u8,
 };
 
 const GenericInputIterator = struct {
     ptr: *anyopaque,
     peekFn: *const fn (ptr: *anyopaque) ?[]const u8,
     nextFn: *const fn (ptr: *anyopaque) ?[]const u8,
+    resetFn: *const fn (ptr: *anyopaque) void,
 
     fn peek(self: GenericInputIterator) ?[]const u8 {
         return self.peekFn(self.ptr);
@@ -66,6 +40,10 @@ const GenericInputIterator = struct {
 
     fn next(self: GenericInputIterator) ?[]const u8 {
         return self.nextFn(self.ptr);
+    }
+
+    fn reset(self: GenericInputIterator) void {
+        return self.resetFn(self.ptr);
     }
 };
 
@@ -88,6 +66,7 @@ pub fn SliceStructIterable(
                 .ptr = self,
                 .peekFn = peek,
                 .nextFn = next,
+                .resetFn = reset,
             };
         }
 
@@ -104,13 +83,17 @@ pub fn SliceStructIterable(
             self.cur += 1;
             return result;
         }
+
+        fn reset(ptr: *anyopaque) void {
+            const self: *Self = @ptrCast(@alignCast(ptr));
+            self.cur = 0;
+        }
     };
 }
 
 pub const InputIterator = union(enum) {
     const Self = @This();
 
-    reader: struct { *std.io.Reader, u8 },
     split: std.mem.SplitIterator(u8, .scalar),
     it: GenericInputIterator,
 
@@ -122,31 +105,29 @@ pub const InputIterator = union(enum) {
         ) };
     }
 
-    pub fn initFromReader(r: *std.io.Reader, delim: u8) Self {
-        return .{ .reader = .{ r, delim } };
-    }
-
     pub fn initFromIterator(it: GenericInputIterator) Self {
         return .{ .it = it };
     }
 
-    pub fn next(self: *Self) !?[]const u8 {
+    pub fn next(self: *Self) ?[]const u8 {
         return switch (self.*) {
-            .reader => |r| r[0].takeDelimiter(r[1]),
             .split => |*it| it.*.next(),
             .it => |*it| it.*.next(),
         };
     }
 
-    pub fn peek(self: *Self) !?[]const u8 {
+    pub fn peek(self: *Self) ?[]const u8 {
         return switch (self.*) {
-            .reader => |r| blk: {
-                const b = try r[0].peekDelimiterExclusive(r[1]);
-                break :blk b;
-            },
             .split => |*it| it.*.peek(),
             .it => |*it| it.*.peek(),
         };
+    }
+
+    pub fn reset(self: *Self) void {
+        switch (self.*) {
+            .split => |*it| it.*.reset(),
+            .it => |*it| it.*.reset(),
+        }
     }
 };
 
@@ -158,28 +139,13 @@ test "InputIterator - split" {
     ;
     var it = InputIterator.initFromBuffer(input, '\n');
 
-    try std.testing.expectEqualStrings("One", (try it.next()).?);
-    try std.testing.expectEqualStrings("Two", (try it.next()).?);
-    try std.testing.expectEqualStrings("Three", (try it.next()).?);
-    try std.testing.expectEqual(null, try it.next());
-}
+    try std.testing.expectEqualStrings("One", it.next().?);
+    try std.testing.expectEqualStrings("Two", it.next().?);
+    try std.testing.expectEqualStrings("Three", it.next().?);
+    try std.testing.expectEqual(null, it.next());
 
-test "InputIterator - reader" {
-    const input =
-        \\One
-        \\Two
-        \\Three
-    ;
-    var buf: [64]u8 = undefined;
-    var reader: std.testing.Reader = .init(&buf, &.{
-        .{ .buffer = input },
-    });
-    var it: InputIterator = .initFromReader(&reader.interface, '\n');
-
-    try std.testing.expectEqualStrings("One", (try it.next()).?);
-    try std.testing.expectEqualStrings("Two", (try it.next()).?);
-    try std.testing.expectEqualStrings("Three", (try it.next()).?);
-    try std.testing.expectEqual(null, try it.next());
+    it.reset();
+    try std.testing.expectEqualStrings("One", (it.next()).?);
 }
 
 test "InputIterator - generic iterator" {
@@ -197,27 +163,30 @@ test "InputIterator - generic iterator" {
     ).init(&test_input);
     var it: InputIterator = .initFromIterator(slice_iterable.iterator());
 
-    try std.testing.expectEqualStrings("Two", (try it.peek()).?);
-    try std.testing.expectEqualStrings("One", (try it.next()).?);
-    try std.testing.expectEqualStrings("Three", (try it.peek()).?);
-    try std.testing.expectEqualStrings("Two", (try it.next()).?);
-    try std.testing.expectEqual(null, try it.peek());
-    try std.testing.expectEqualStrings("Three", (try it.next()).?);
-    try std.testing.expectEqual(null, try it.peek());
-    try std.testing.expectEqual(null, try it.next());
+    try std.testing.expectEqualStrings("Two", it.peek().?);
+    try std.testing.expectEqualStrings("One", it.next().?);
+    try std.testing.expectEqualStrings("Three", it.peek().?);
+    try std.testing.expectEqualStrings("Two", it.next().?);
+    try std.testing.expectEqual(null, it.peek());
+    try std.testing.expectEqualStrings("Three", it.next().?);
+    try std.testing.expectEqual(null, it.peek());
+    try std.testing.expectEqual(null, it.next());
+
+    it.reset();
+    try std.testing.expectEqualStrings("One", it.next().?);
 }
 
 pub fn loadInput(alloc: std.mem.Allocator, name: []const u8) !std.fs.File {
-    const home_dir = try std.process.getEnvVarOwned(
+    const cwd_path = try std.fs.cwd().realpathAlloc(
         alloc,
-        "HOME",
+        ".",
     );
-    defer alloc.free(home_dir);
+    defer alloc.free(cwd_path);
 
     const path = try std.fmt.allocPrint(
         alloc,
-        "{s}/Code/advent-of-code-2025/input/{s}",
-        .{ home_dir, name },
+        "{s}/src/input/{s}",
+        .{ cwd_path, name },
     );
     defer alloc.free(path);
 

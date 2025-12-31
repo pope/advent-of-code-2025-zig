@@ -1,21 +1,19 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day8-input");
-    defer setup.deinit();
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day8-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    var it = setup.lineIterator();
+    const part1 = try part1Answer(alloc, &it, 1000);
+    it.reset();
+    const part2 = try part2Answer(alloc, &it);
 
-    std.debug.print("08.1: Answer = {}\n", .{
-        try part1Answer(setup.allocator(), &it, 1000),
-    });
-
-    try setup.reset();
-
-    std.debug.print("08.2: Answer = {}\n", .{
-        try part2Answer(setup.allocator(), &it),
-    });
+    return .{
+        .day = 8,
+        .part1 = .initResult("Answer", part1),
+        .part2 = .initResult("Answer", part2),
+    };
 }
 
 // Element type can be a float or int. Messing around for fun.  As a result,
@@ -93,7 +91,7 @@ fn parseInput(alloc: std.mem.Allocator, line_it: *aoc.InputIterator) ![]Vec4 {
     const vec_type = @typeInfo(Vec4).vector.child;
     var result: std.ArrayList(Vec4) = .empty;
     defer result.deinit(alloc);
-    while (try line_it.next()) |line| {
+    while (line_it.next()) |line| {
         var it = std.mem.splitScalar(
             u8,
             line,

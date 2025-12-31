@@ -1,21 +1,28 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day1-input");
-    defer setup.deinit();
-    var it = setup.lineIterator();
+pub fn solve(_: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day1-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    try part1(&it);
-    try setup.reset();
-    try part2(&it);
+    const p1a = try part1(&it);
+    it.reset();
+    const p2a = try part2(&it);
+
+    return .{
+        .day = 1,
+        .part1 = .initResult("Password", p1a),
+        .part2 = .initResult("Password", p2a),
+    };
 }
 
-fn part1(it: *aoc.InputIterator) !void {
+fn part1(it: *aoc.InputIterator) !u64 {
     var dial: i16 = 50;
-    var count: u16 = 0;
+    var count: u64 = 0;
 
-    while (try it.next()) |line| {
+    while (it.next()) |line| {
+        if (line.len == 0) break;
+
         const new_dial, const new_count = try part1ProcessLine(
             line,
             dial,
@@ -23,14 +30,16 @@ fn part1(it: *aoc.InputIterator) !void {
         dial = new_dial;
         count += new_count;
     }
-    std.debug.print("01.1: Password = {d}\n", .{count});
+    return count;
 }
 
-fn part2(it: *aoc.InputIterator) !void {
+fn part2(it: *aoc.InputIterator) !u64 {
     var dial: i16 = 50;
-    var count: u16 = 0;
+    var count: u64 = 0;
 
-    while (try it.next()) |line| {
+    while (it.next()) |line| {
+        if (line.len == 0) break;
+
         const new_dial, const new_count = try part2ProcessLine(
             line,
             dial,
@@ -38,7 +47,7 @@ fn part2(it: *aoc.InputIterator) !void {
         dial = new_dial;
         count += new_count;
     }
-    std.debug.print("01.2: Password = {d}\n", .{count});
+    return count;
 }
 
 fn part1ProcessLine(line: []const u8, dial: i16) !struct { i16, u16 } {

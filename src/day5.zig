@@ -1,28 +1,26 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day5-input");
-    defer setup.deinit();
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day5-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
     const num_size = u64;
-    var it = setup.lineIterator();
     var ranges = try processRanges(
         num_size,
-        setup.allocator(),
+        alloc,
         &it,
     );
-    defer ranges.deinit(setup.allocator());
+    defer ranges.deinit(alloc);
 
-    std.debug.print(
-        "05.1: Fresh = {}\n",
-        .{try part1Answer(num_size, ranges.items, &it)},
-    );
+    const part1 = try part1Answer(num_size, ranges.items, &it);
+    const part2 = part2Answer(num_size, ranges.items);
 
-    std.debug.print(
-        "05.2: Fresh = {}\n",
-        .{part2Answer(num_size, ranges.items)},
-    );
+    return .{
+        .day = 4,
+        .part1 = .initResult("Fresh", part1),
+        .part2 = .initResult("Fresh", part2),
+    };
 }
 
 fn part1Answer(
@@ -31,7 +29,7 @@ fn part1Answer(
     it: *aoc.InputIterator,
 ) !u16 {
     var num_fresh: u16 = 0;
-    while (try it.next()) |line| {
+    while (it.next()) |line| {
         const a = try std.fmt.parseInt(T, line, 10);
         for (ranges) |r| {
             if (a >= r.low and a <= r.high) {
@@ -105,7 +103,7 @@ fn processRanges(
     it: *aoc.InputIterator,
 ) !std.ArrayList(Range(T)) {
     var ranges: std.ArrayList(Range(T)) = .empty;
-    while (try it.next()) |line| {
+    while (it.next()) |line| {
         if (std.mem.eql(u8, "", line)) break;
         try ranges.append(
             alloc,

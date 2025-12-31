@@ -1,23 +1,19 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day6-input");
-    defer setup.deinit();
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    const input = @embedFile("./input/day6-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    var it = setup.lineIterator();
+    const part1 = try part1ProcessInput(u16, &it, alloc);
+    it.reset();
+    const part2 = try part2ProcessInput(&it, alloc);
 
-    std.debug.print(
-        "06.1: Total = {}\n",
-        .{try part1ProcessInput(u16, &it, setup.allocator())},
-    );
-
-    try setup.reset();
-
-    std.debug.print(
-        "06.2: Total = {}\n",
-        .{try part2ProcessInput(&it, setup.allocator())},
-    );
+    return .{
+        .day = 6,
+        .part1 = .initResult("Total", part1),
+        .part2 = .initResult("Total", part2),
+    };
 }
 
 const Operator = enum { add, multiply };
@@ -35,7 +31,7 @@ fn part1ProcessInput(
 
     // Process the first line
     const len = blk: {
-        const line = try it.next() orelse return error.Oops;
+        const line = it.next() orelse return error.Oops;
         var tok_itr = std.mem.splitScalar(
             u8,
             line,
@@ -54,7 +50,7 @@ fn part1ProcessInput(
 
     // Process the next non-operator lines
     while (true) {
-        if (try it.peek()) |line| {
+        if (it.peek()) |line| {
             if (line.len == 0) return error.Oops;
             switch (line[0]) {
                 '*', '+' => break,
@@ -62,7 +58,7 @@ fn part1ProcessInput(
             }
         } else return error.Oops;
 
-        const line = try it.next() orelse unreachable;
+        const line = it.next() orelse unreachable;
         var cols: std.ArrayList(T) = try .initCapacity(alloc, len);
         var tok_itr = std.mem.splitScalar(
             u8,
@@ -80,7 +76,7 @@ fn part1ProcessInput(
     }
 
     const operators = blk: {
-        const line = try it.next() orelse return error.Oops;
+        const line = it.next() orelse return error.Oops;
 
         var ops: std.ArrayList(Operator) = try .initCapacity(alloc, len);
         var tok_itr = std.mem.splitScalar(
@@ -140,7 +136,7 @@ fn part2ProcessInput(
 
     // Process the next non-operator lines
     while (true) {
-        if (try it.peek()) |line| {
+        if (it.peek()) |line| {
             if (line.len == 0) return error.Oops;
             switch (line[0]) {
                 '*', '+' => break,
@@ -148,7 +144,7 @@ fn part2ProcessInput(
             }
         } else return error.Oops;
 
-        const line = try it.next() orelse unreachable;
+        const line = it.next() orelse unreachable;
         // TODO(pope): @Vector?
         var cols: std.ArrayList(NumCol) = try .initCapacity(alloc, line.len);
         for (line) |c| {
@@ -172,7 +168,7 @@ fn part2ProcessInput(
     }
 
     const operators = blk: {
-        const line = try it.next() orelse return error.Oops;
+        const line = it.next() orelse return error.Oops;
         var ops: std.ArrayList(OpCol) = .empty;
 
         if (line.len != numbers.items[0].len) return error.Oops;

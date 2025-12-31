@@ -1,21 +1,25 @@
 const std = @import("std");
-const aoc = @import("aoc");
+const aoc = @import("root.zig");
 
-pub fn main() !void {
-    var setup: aoc.Setup = try .init("day7-input");
-    defer setup.deinit();
-
-    var it = setup.lineIterator();
-    var arena = std.heap.ArenaAllocator.init(setup.allocator());
+pub fn solve(alloc: std.mem.Allocator) !aoc.Answer {
+    var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
-    _, const p1a = try part1Answer(&arena, &it);
-    std.debug.print("07.1: Splits = {}\n", .{p1a});
+    const input = @embedFile("./input/day7-input");
+    var it: aoc.InputIterator = .initFromBuffer(input, '\n');
 
-    try setup.reset();
+    _, const p1a = try part1Answer(&arena, &it);
+
+    it.reset();
     _ = arena.reset(.retain_capacity);
+
     const p2a = try part2Answer(&arena, &it);
-    std.debug.print("07.2: Timelines = {}\n", .{p2a});
+
+    return .{
+        .day = 7,
+        .part1 = .initResult("Splits", p1a),
+        .part2 = .initResult("Timelines", p2a),
+    };
 }
 
 const Tile = enum {
@@ -110,7 +114,7 @@ fn parseInput(arena: *std.heap.ArenaAllocator, it: *aoc.InputIterator) ![][]Tile
     const alloc = arena.allocator();
 
     const line_len = blk: {
-        if (try it.peek()) |l| {
+        if (it.peek()) |l| {
             if (l.len == 0) return error.Oops;
             break :blk l.len;
         }
@@ -118,7 +122,7 @@ fn parseInput(arena: *std.heap.ArenaAllocator, it: *aoc.InputIterator) ![][]Tile
     };
 
     var data: std.ArrayList([]Tile) = .empty;
-    while (try it.next()) |line| {
+    while (it.next()) |line| {
         if (line_len != line.len) return error.Oops;
         var row: std.ArrayList(Tile) = try .initCapacity(alloc, line_len);
         for (line) |c| {
