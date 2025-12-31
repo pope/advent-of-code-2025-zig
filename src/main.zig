@@ -10,7 +10,7 @@ const day7 = @import("day7.zig");
 const day8 = @import("day8.zig");
 
 fn kib(num: u64) u64 {
-    return num << 20;
+    return num << 10;
 }
 
 pub fn main() !void {
