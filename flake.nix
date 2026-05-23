@@ -39,7 +39,11 @@
             statix.enable = true;
             zig.enable = true;
           };
-          settings.global.excludes = [ ".envrc" ];
+          settings.global.excludes = [
+            ".envrc"
+            ".zig-cache"
+            "zig-out"
+          ];
         })
       );
     in

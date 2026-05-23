@@ -11,7 +11,7 @@ pub const AnswerValue = union(enum) {
         } };
     }
 
-    pub fn write(self: AnswerValue, w: *std.io.Writer) !void {
+    pub fn write(self: AnswerValue, w: *std.Io.Writer) !void {
         switch (self) {
             .todo => _ = try w.write("TODO"),
             .result => |r| try w.print(

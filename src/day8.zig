@@ -143,16 +143,17 @@ fn getPairsHeap(
     alloc: std.mem.Allocator,
     boxes: []const Vec4,
 ) !Vec4PairHeap {
-    var heap: Vec4PairHeap = .init(alloc, {});
-    errdefer heap.deinit();
+    // var heap: Vec4PairHeap = .init(alloc, {});
+    var heap: Vec4PairHeap = .empty;
+    errdefer heap.deinit(alloc);
 
     // Close enough size to avoid re-allocs.
-    try heap.ensureTotalCapacity(std.math.pow(usize, boxes.len, 2) / 2);
+    try heap.ensureTotalCapacity(alloc, std.math.pow(usize, boxes.len, 2) / 2);
 
     for (boxes[0 .. boxes.len - 1], 0..) |a, i| {
         for (boxes[i + 1 .. boxes.len], 1..) |b, j| {
             const distance = relativeDistance(a, b);
-            try heap.add(.{
+            try heap.push(alloc, .{
                 .a_idx = @intCast(i),
                 .b_idx = @intCast(i + j),
                 .distance = distance,
@@ -179,10 +180,10 @@ fn part1Answer(
             alloc,
             boxes,
         );
-        defer pair_heap.deinit();
+        defer pair_heap.deinit(alloc);
 
         var count: usize = 0;
-        while (pair_heap.removeOrNull()) |p| {
+        while (pair_heap.pop()) |p| {
             d_set.merge(p.a_idx, p.b_idx);
             count += 1;
             if (count >= top_num) break;
@@ -222,10 +223,10 @@ fn part2Answer(
         alloc,
         boxes,
     );
-    defer pair_heap.deinit();
+    defer pair_heap.deinit(alloc);
 
     var remaining = boxes.len;
-    while (pair_heap.removeOrNull()) |p| {
+    while (pair_heap.pop()) |p| {
         if (d_set.root(p.a_idx) == d_set.root(p.b_idx)) continue;
         d_set.merge(p.a_idx, p.b_idx);
         remaining -= 1;
